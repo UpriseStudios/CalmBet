@@ -1,33 +1,86 @@
-import { Opportunity, CalculatedOpportunity } from '@/types';
 
-export function calculateOpportunity(
-  opportunity: Opportunity,
-  backStake: number,
-  commission: number
-): CalculatedOpportunity {
+import { 
+  Opportunity, 
+  CalculatedStandardOpportunity,
+  CalculatedOpportunity,
+  HorseRacingOpportunity,
+} from '@/types';
+import { calculateEachWay } from './horseRacingCalculations';
+
+// --- Main Calculation Entry Point ---
+
+interface CalculateProps {
+  opportunity: Opportunity;
+  stake: number;
+  commission: number;
+  isEachWay?: boolean; // Optional flag for horse racing
+}
+
+/**
+ * A unified function to calculate bet outcomes for any sport.
+ * It acts as a router, directing the calculation to the correct logic
+ * based on the sport and whether the bet is each-way.
+ *
+ * @returns A CalculatedOpportunity object, either Standard or EachWay.
+ */
+export function calculate({
+  opportunity,
+  stake,
+  commission,
+  isEachWay = false,
+}: CalculateProps): CalculatedOpportunity {
+  switch (opportunity.sport) {
+    case 'Football':
+      // Football bets are always standard.
+      return calculateStandard({ opportunity, stake, commission });
+
+    case 'HorseRacing':
+      // Horse racing can be standard (win-only) or each-way.
+      if (isEachWay) {
+        // We need to assert the type here for the each-way calculation
+        return calculateEachWay({
+          opportunity: opportunity as HorseRacingOpportunity,
+          totalStake: stake,
+          commission,
+        });
+      } else {
+        return calculateStandard({ opportunity, stake, commission });
+      }
+
+    default:
+      // This should never be reached if all sports are handled.
+      throw new Error(`Unsupported sport: ${(opportunity as any).sport}`);
+  }
+}
+
+// --- Specific Calculation Implementations ---
+
+/**
+ * Calculates the outcome for a standard "back and lay" bet.
+ * This applies to football and non-each-way horse racing bets.
+ */
+function calculateStandard({ opportunity, stake, commission }: Omit<CalculateProps, 'isEachWay'>): CalculatedStandardOpportunity {
   const { backOdds, layOdds } = opportunity;
-  const commissionDecimal = commission / 100;
+  const commissionRate = commission / 100;
 
-  const layStake = (backOdds * backStake) / (layOdds - commissionDecimal);
-  const liability = (layOdds - 1) * layStake;
-
-  const profitIfWin = (backOdds * backStake - backStake) - liability;
-  const profitIfLose = layStake * (1 - commissionDecimal) - backStake;
-
-  const isArb = profitIfWin >= 0 && profitIfLose >= 0;
-  const qualifyingLoss = Math.min(profitIfWin, profitIfLose);
+  const layStake = (backOdds * stake) / (layOdds - commissionRate);
+  const liability = layStake * (layOdds - 1);
+  const profit = stake * (backOdds - 1) - liability;
+  const qualifyingLoss = layStake * (1 - commissionRate) - stake;
 
   return {
-    ...opportunity,
-    backStake,
-    layStake: Math.round(layStake * 100) / 100,
-    liability: Math.round(liability * 100) / 100,
-    profitIfWin: Math.round(profitIfWin * 100) / 100,
-    profitIfLose: Math.round(profitIfLose * 100) / 100,
-    isArb,
-    qualifyingLoss: Math.round(qualifyingLoss * 100) / 100,
+    calculationType: 'Standard',
+    opportunity,
+    backStake: stake,
+    layStake,
+    liability,
+    profit,
+    qualifyingLoss,
   };
 }
+
+
+// --- Formatting Utilities (Preserved) ---
 
 export function formatCurrency(amount: number, showSign = false): string {
   const options = {
@@ -53,10 +106,7 @@ export function formatOdds(odds: number): string {
 }
 
 export function formatTime(date: Date): string {
-  return date.toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function formatDate(date: Date): string {
@@ -64,16 +114,10 @@ export function formatDate(date: Date): string {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  if (date.toDateString() === today.toDateString()) {
-    return 'Today';
-  } else if (date.toDateString() === tomorrow.toDateString()) {
-    return 'Tomorrow';
-  }
-  return date.toLocaleDateString('en-GB', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
+  if (date.toDateString() === today.toDateString()) return 'Today';
+  if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+  
+  return date.toLocaleDateG-string('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
 export function getTimeUntilKickoff(kickoff: Date): string {
@@ -82,26 +126,10 @@ export function getTimeUntilKickoff(kickoff: Date): string {
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(minutes / 60);
   
-  if (minutes < 60) {
-    return `${minutes}m`;
-  } else if (hours < 24) {
+  if (minutes < 60) return `${minutes}m`;
+  if (hours < 24) {
     const remainingMinutes = minutes % 60;
     return `${hours}h${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
   }
   return `${Math.floor(hours / 24)}d`;
-}
-
-export function isWithinQuietHours(start: string, end: string): boolean {
-  const now = new Date();
-  const [startHour, startMin] = start.split(':').map(Number);
-  const [endHour, endMin] = end.split(':').map(Number);
-  
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const startMinutes = startHour * 60 + startMin;
-  const endMinutes = endHour * 60 + endMin;
-
-  if (startMinutes > endMinutes) {
-    return currentMinutes >= startMinutes || currentMinutes < endMinutes;
-  }
-  return currentMinutes >= startMinutes && currentMinutes < endMinutes;
 }

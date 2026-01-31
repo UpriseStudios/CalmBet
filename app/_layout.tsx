@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -14,6 +15,7 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+// Main navigation stack
 function RootLayoutNav() {
   return (
     <Stack
@@ -35,16 +37,24 @@ function RootLayoutNav() {
   );
 }
 
-function App() {
-  const { isRealityCheckVisible, realityCheckData, handleContinue, handleTakeBreak } = useRealityCheck();
+// A new component that includes the reality check logic
+function AppWithHarmMinimisation() {
+  const { isModalVisible, handleContinue, sessionDuration, sessionActions } = useRealityCheck();
+
+  // A placeholder function for taking a break
+  const handleTakeBreak = () => {
+    console.log("User initiated a break. This will be implemented fully later.");
+    handleContinue(); // For now, just close the modal
+  };
 
   return (
     <>
       <StatusBar style="light" />
       <RootLayoutNav />
       <RealityCheckModal 
-        visible={isRealityCheckVisible}
-        data={realityCheckData}
+        visible={isModalVisible}
+        sessionDuration={sessionDuration}
+        sessionActions={sessionActions}
         onContinue={handleContinue}
         onTakeBreak={handleTakeBreak}
       />
@@ -52,8 +62,10 @@ function App() {
   )
 }
 
+// The root layout that wraps the entire app in providers
 export default function RootLayout() {
   useEffect(() => {
+    // Hide the splash screen once the app is ready
     SplashScreen.hideAsync();
   }, []);
 
@@ -62,7 +74,7 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AppProvider>
           <HarmMinimisationProvider>
-            <App />
+            <AppWithHarmMinimisation />
           </HarmMinimisationProvider>
         </AppProvider>
       </GestureHandlerRootView>

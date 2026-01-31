@@ -1,14 +1,26 @@
+
+// Defines the shape of all data structures used in the CalmBet app.
+
+// --- Core Types ---
+
+export type Sport = 'Football' | 'HorseRacing';
+
 export type Bookmaker = 'bet365' | 'skybet' | 'williamhill' | 'paddypower' | 'ladbrokes';
 
-export enum NudgeType {
-  Session = 'session',
-  LateNight = 'late_night',
-  StakeLimit = 'stake_limit',
-  DailyLimit = 'daily_limit',
-  SelfExclusion = 'self_exclusion',
+export interface Anomaly {
+  type: 'boost' | 'liquidity' | 'margin';
+  severity: 'low' | 'medium' | 'high';
+  description: string;
 }
 
-export interface Opportunity {
+// --- Opportunity Types (Discriminated Union) ---
+
+// The core Opportunity type is a union of all sport-specific opportunities.
+// The `sport` property acts as the discriminant.
+export type Opportunity = FootballOpportunity | HorseRacingOpportunity;
+
+export interface FootballOpportunity {
+  sport: 'Football';
   id: string;
   homeTeam: string;
   awayTeam: string;
@@ -19,24 +31,70 @@ export interface Opportunity {
   layOdds: number;
   liquidity: number;
   betfairMarketId: string;
-  matchConfidence: number;
+  anomaly?: Anomaly;
 }
 
-export interface CalculatedOpportunity extends Opportunity {
+export interface HorseRacingOpportunity {
+  sport: 'HorseRacing';
+  id: string;
+  eventName: string; // e.g., "15:30 Ascot"
+  horseName: string;
+  kickoff: Date;
+  bookmaker: Bookmaker;
+  backOdds: number;
+  layOdds: number;
+  liquidity: number;
+  betfairMarketId: string;
+  placeTerms: {
+    fraction: number; // e.g., 0.25 for 1/4
+    places: number;
+  };
+  anomaly?: Anomaly;
+}
+
+// --- Calculated Opportunity Types ---
+
+// A union of all possible calculation results.
+export type CalculatedOpportunity = 
+  | CalculatedStandardOpportunity
+  | CalculatedEachWayOpportunity;
+
+// For standard bets (Football or Horse Racing win-only)
+export interface CalculatedStandardOpportunity {
+  calculationType: 'Standard';
+  opportunity: Opportunity; // The original opportunity data
   backStake: number;
   layStake: number;
   liability: number;
-  profitIfWin: number;
-  profitIfLose: number;
-  isArb: boolean;
+  profit: number;
   qualifyingLoss: number;
 }
+
+// For each-way horse racing bets
+export interface CalculatedEachWayOpportunity {
+  calculationType: 'EachWay';
+  opportunity: HorseRacingOpportunity; // Each-way is only for horse racing
+  totalStake: number;
+  // Win part of the bet
+  winBackStake: number;
+  winLayStake: number;
+  winLiability: number;
+  // Place part of the bet
+  placeBackStake: number;
+  placeLayStake: number;
+  placeLiability: number;
+  // Final profit/loss scenarios
+  profitIfWin: number;
+  profitIfPlace: number;
+  profitIfLose: number;
+}
+
+
+// --- User and Session Types ---
 
 export interface CompletedOpportunity extends CalculatedOpportunity {
   completedAt: Date;
   status: 'done' | 'odds_changed' | 'not_available';
-  actualBackOdds?: number;
-  actualLayOdds?: number;
 }
 
 export interface UserSettings {
@@ -44,26 +102,19 @@ export interface UserSettings {
   commission: number;
   minLiquidity: number;
   maxQualifyingLoss: number;
-  maxStakePerBet: number;
-  maxDailyStake: number;
-  quietHoursEnabled: boolean;
-  quietHoursStart: string;
-  quietHoursEnd: string;
-  sessionNudgeThreshold: number;
+  sportPreference: Sport;
 }
 
-export interface SessionStats {
-  actionsToday: number;
-  todayStake: number;
-  currentSessionActions: number;
-  sessionStartTime: Date | null;
-  lastActionTime: Date | null;
+export enum NudgeType {
+  Session = 'session',
+  LateNight = 'late_night',
+  StakeLimit = 'stake_limit',
+  DailyLimit = 'daily_limit',
+  SelfExclusion = 'self_exclusion',
 }
 
-export interface SelfExclusionSettings {
-  isActive: boolean;
-  exclusionUntil: string | null;
-}
+
+// --- Constants ---
 
 export const BOOKMAKER_NAMES: Record<Bookmaker, string> = {
   bet365: 'Bet365',
@@ -78,10 +129,5 @@ export const DEFAULT_SETTINGS: UserSettings = {
   commission: 2,
   minLiquidity: 200,
   maxQualifyingLoss: -1,
-  maxStakePerBet: 50,
-  maxDailyStake: 500,
-  quietHoursEnabled: true,
-  quietHoursStart: '23:30',
-  quietHoursEnd: '07:00',
-  sessionNudgeThreshold: 5,
+  sportPreference: 'Football',
 };

@@ -1,82 +1,50 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useApp } from '@/contexts/AppContext';
-import { useHarmMinimisation } from '@/contexts/HarmMinimisationContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const LAST_REALITY_CHECK_KEY = 'calmbet_last_reality_check';
+import { useState, useEffect } from 'react';
+import { useHarmMinimisation } from '../contexts/HarmMinimisationContext';
+
 const REALITY_CHECK_INTERVAL = 60 * 60 * 1000; // 60 minutes in milliseconds
 
-export function useRealityCheck() {
-  const { sessionStats, settings } = useApp();
-  const { takeBreak, isSelfExcluded } = useHarmMinimisation();
+/**
+ * A hook to manage the logic for displaying the reality check modal.
+ * It automatically checks if the modal should be shown based on the time elapsed
+ * since the last check, as stored in the HarmMinimisationContext.
+ */
+export const useRealityCheck = () => {
   const [isModalVisible, setModalVisible] = useState(false);
-  const [lastCheckTime, setLastCheckTime] = useState<Date | null>(null);
+  const { state, resetRealityCheckTimer, isLoading } = useHarmMinimisation();
+  const { lastRealityCheckTime, sessionStartTime, sessionActions } = state;
 
   useEffect(() => {
-    loadLastCheckTime();
-  }, []);
+    if (isLoading) return; // Don't run the timer until storage is loaded
 
-  useEffect(() => {
-    const checkTriggers = () => {
-      if (isModalVisible || isSelfExcluded) return;
-
-      const now = new Date();
-      if (lastCheckTime && (now.getTime() - lastCheckTime.getTime() > REALITY_CHECK_INTERVAL)) {
-        triggerModal();
-        return;
+    // Set up an interval to check if the reality check is due
+    const interval = setInterval(() => {
+      if (lastRealityCheckTime && (Date.now() - lastRealityCheckTime > REALITY_CHECK_INTERVAL)) {
+        setModalVisible(true);
       }
-      
-      if (sessionStats.currentSessionActions >= 10) {
-        triggerModal();
-        return;
-      }
+    }, 60 * 1000); // Check every minute
 
-      if (sessionStats.todayStake > settings.maxDailyStake * 0.5) {
-        triggerModal();
-        return;
-      }
-    };
-
-    const interval = setInterval(checkTriggers, 10000); // Check every 10 seconds
-
+    // Clean up the interval on component unmount
     return () => clearInterval(interval);
+  }, [lastRealityCheckTime, isLoading]);
 
-  }, [sessionStats, settings, lastCheckTime, isModalVisible, isSelfExcluded]);
-
-  const loadLastCheckTime = async () => {
-    const storedTime = await AsyncStorage.getItem(LAST_REALITY_CHECK_KEY);
-    if (storedTime) {
-      setLastCheckTime(new Date(storedTime));
-    }
+  // Function to handle the user continuing after the reality check
+  const handleContinue = () => {
+    setModalVisible(false);
+    resetRealityCheckTimer(); // Reset the timer in the persistent context
   };
 
-  const triggerModal = useCallback(() => {
-    setModalVisible(true);
-    const now = new Date();
-    setLastCheckTime(now);
-    AsyncStorage.setItem(LAST_REALITY_CHECK_KEY, now.toISOString());
-  }, []);
-
-  const handleContinue = useCallback(() => {
-    setModalVisible(false);
-  }, []);
-
-  const handleTakeBreak = useCallback(() => {
-    setModalVisible(false);
-    takeBreak(15); // Take a 15-minute break
-  }, [takeBreak]);
-
-  const realityCheckData = {
-    sessionDuration: sessionStats.sessionStartTime ? (new Date().getTime() - sessionStats.sessionStartTime.getTime()) / 60000 : 0,
-    totalStaked: sessionStats.todayStake,
-    netProfit: 0, // Placeholder - needs profit/loss tracking
-    actionsCompleted: sessionStats.currentSessionActions,
+  // Calculate session duration
+  const getSessionDuration = () => {
+    if (!sessionStartTime) return '0 minutes';
+    const durationMinutes = Math.floor((Date.now() - sessionStartTime) / (1000 * 60));
+    return `${durationMinutes} minutes`;
   };
 
   return {
-    isRealityCheckVisible: isModalVisible,
-    realityCheckData,
+    isModalVisible,
     handleContinue,
-    handleTakeBreak,
+    sessionDuration: getSessionDuration(),
+    sessionActions,
   };
-}
+};

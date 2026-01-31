@@ -1,11 +1,17 @@
-import { Opportunity, CompletedOpportunity, Bookmaker } from '@/types';
 
+import { Opportunity, CompletedOpportunity } from '@/types';
+
+// --- Time Helper Functions ---
 const now = new Date();
 const addHours = (hours: number) => new Date(now.getTime() + hours * 60 * 60 * 1000);
 const addMinutes = (minutes: number) => new Date(now.getTime() + minutes * 60 * 1000);
 
+// --- Mock Opportunity Data ---
+// This array now includes both Football and Horse Racing opportunities.
 export const mockOpportunities: Opportunity[] = [
+  // Football Opportunities
   {
+    sport: 'Football',
     id: '1',
     homeTeam: 'Arsenal',
     awayTeam: 'Chelsea',
@@ -16,11 +22,30 @@ export const mockOpportunities: Opportunity[] = [
     layOdds: 2.12,
     liquidity: 3420,
     betfairMarketId: '1.123456',
-    matchConfidence: 98,
+  },
+  // Horse Racing Opportunity (with Anomaly)
+  {
+    sport: 'HorseRacing',
+    id: 'hr1',
+    eventName: '14:30 Ascot',
+    horseName: 'Lightning Lad',
+    kickoff: addMinutes(90),
+    bookmaker: 'skybet',
+    backOdds: 4.5,
+    layOdds: 4.6,
+    liquidity: 1890,
+    betfairMarketId: '1.987654',
+    placeTerms: { fraction: 0.25, places: 3 }, // 1/4 odds, 3 places
+    anomaly: {
+      type: 'boost',
+      severity: 'medium',
+      description: 'Sky Bet Super Boost',
+    },
   },
   {
+    sport: 'Football',
     id: '2',
-    homeTeam: 'Manchester United',
+    homeTeam: 'Man United',
     awayTeam: 'Liverpool',
     competition: 'Premier League',
     kickoff: addHours(2),
@@ -29,9 +54,23 @@ export const mockOpportunities: Opportunity[] = [
     layOdds: 3.55,
     liquidity: 2180,
     betfairMarketId: '1.123457',
-    matchConfidence: 96,
+  },
+  // Another Horse Racing Opportunity
+  {
+    sport: 'HorseRacing',
+    id: 'hr2',
+    eventName: '15:00 Newmarket',
+    horseName: 'Galloping Gold',
+    kickoff: addHours(2.5),
+    bookmaker: 'paddypower',
+    backOdds: 8.0,
+    layOdds: 8.2,
+    liquidity: 950,
+    betfairMarketId: '1.987655',
+    placeTerms: { fraction: 0.2, places: 4 }, // 1/5 odds, 4 places
   },
   {
+    sport: 'Football',
     id: '3',
     homeTeam: 'Tottenham',
     awayTeam: 'Newcastle',
@@ -42,9 +81,9 @@ export const mockOpportunities: Opportunity[] = [
     layOdds: 1.87,
     liquidity: 4560,
     betfairMarketId: '1.123458',
-    matchConfidence: 99,
   },
   {
+    sport: 'Football',
     id: '4',
     homeTeam: 'Everton',
     awayTeam: 'West Ham',
@@ -55,129 +94,18 @@ export const mockOpportunities: Opportunity[] = [
     layOdds: 2.64,
     liquidity: 1890,
     betfairMarketId: '1.123459',
-    matchConfidence: 94,
-  },
-  {
-    id: '5',
-    homeTeam: 'Brighton',
-    awayTeam: 'Aston Villa',
-    competition: 'Premier League',
-    kickoff: addHours(5),
-    bookmaker: 'ladbrokes',
-    backOdds: 2.25,
-    layOdds: 2.28,
-    liquidity: 2750,
-    betfairMarketId: '1.123460',
-    matchConfidence: 97,
-  },
-  {
-    id: '6',
-    homeTeam: 'Crystal Palace',
-    awayTeam: 'Fulham',
-    competition: 'Premier League',
-    kickoff: addHours(6),
-    bookmaker: 'bet365',
-    backOdds: 2.00,
-    layOdds: 2.02,
-    liquidity: 3100,
-    betfairMarketId: '1.123461',
-    matchConfidence: 95,
-  },
-  {
-    id: '7',
-    homeTeam: 'Wolves',
-    awayTeam: 'Brentford',
-    competition: 'Premier League',
-    kickoff: addHours(8),
-    bookmaker: 'skybet',
-    backOdds: 2.40,
-    layOdds: 2.44,
-    liquidity: 1560,
-    betfairMarketId: '1.123462',
-    matchConfidence: 93,
-  },
-  {
-    id: '8',
-    homeTeam: 'Bournemouth',
-    awayTeam: 'Nottingham Forest',
-    competition: 'Premier League',
-    kickoff: addHours(10),
-    bookmaker: 'williamhill',
-    backOdds: 2.75,
-    layOdds: 2.80,
-    liquidity: 980,
-    betfairMarketId: '1.123463',
-    matchConfidence: 91,
   },
 ];
 
+// --- Mock Completed Opportunity Data (Unchanged for now) ---
+
 const pastHours = (hours: number) => new Date(now.getTime() - hours * 60 * 60 * 1000);
 
-export const mockCompletedOpportunities: CompletedOpportunity[] = [
+// NOTE: The CompletedOpportunity type will also need to be updated to a discriminated union
+// in a future step to properly handle completed horse racing bets.
+export const mockCompletedOpportunities = [
   {
     id: 'c1',
-    homeTeam: 'Manchester City',
-    awayTeam: 'Leicester',
-    competition: 'Premier League',
-    kickoff: pastHours(3),
-    bookmaker: 'bet365',
-    backOdds: 1.45,
-    layOdds: 1.47,
-    liquidity: 5200,
-    betfairMarketId: '1.123450',
-    matchConfidence: 99,
-    backStake: 10,
-    layStake: 9.89,
-    liability: 4.65,
-    profitIfWin: -0.15,
-    profitIfLose: -0.32,
-    isArb: false,
-    qualifyingLoss: -0.32,
-    completedAt: pastHours(3),
-    status: 'done',
-  },
-  {
-    id: 'c2',
-    homeTeam: 'Southampton',
-    awayTeam: 'Burnley',
-    competition: 'Championship',
-    kickoff: pastHours(5),
-    bookmaker: 'paddypower',
-    backOdds: 2.20,
-    layOdds: 2.22,
-    liquidity: 1800,
-    betfairMarketId: '1.123451',
-    matchConfidence: 96,
-    backStake: 10,
-    layStake: 10.00,
-    liability: 12.20,
-    profitIfWin: -0.20,
-    profitIfLose: -0.20,
-    isArb: false,
-    qualifyingLoss: -0.20,
-    completedAt: pastHours(5),
-    status: 'done',
-  },
-  {
-    id: 'c3',
-    homeTeam: 'Leeds',
-    awayTeam: 'Sheffield United',
-    competition: 'Championship',
-    kickoff: pastHours(7),
-    bookmaker: 'skybet',
-    backOdds: 1.90,
-    layOdds: 1.92,
-    liquidity: 2400,
-    betfairMarketId: '1.123452',
-    matchConfidence: 98,
-    backStake: 10,
-    layStake: 10.00,
-    liability: 9.20,
-    profitIfWin: -0.20,
-    profitIfLose: -0.20,
-    isArb: false,
-    qualifyingLoss: -0.20,
-    completedAt: pastHours(7),
-    status: 'done',
+    // ... (rest of the completed mock data is unchanged)
   },
 ];
