@@ -7,7 +7,8 @@ import {
   TextInput,
   Switch,
   Pressable,
-  Linking
+  Linking,
+  Alert
 } from 'react-native';
 import { 
   Wallet, 
@@ -18,10 +19,12 @@ import {
   Moon,
   Clock,
   ExternalLink,
-  Heart
+  Heart,
+  LogOut
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useApp } from '@/contexts/AppContext';
+import { useHarmMinimisation } from '@/contexts/HarmMinimisationContext';
 
 interface SettingRowProps {
   icon: React.ReactNode;
@@ -82,6 +85,7 @@ function ToggleRow({ icon, label, description, value, onValueChange }: ToggleRow
 
 export default function SettingsScreen() {
   const { settings, setSettings } = useApp();
+  const { startSelfExclusion, isSelfExcluded } = useHarmMinimisation();
   
   const [backStake, setBackStake] = useState(settings.defaultBackStake.toString());
   const [commission, setCommission] = useState(settings.commission.toString());
@@ -90,6 +94,24 @@ export default function SettingsScreen() {
   const [maxStakePerBet, setMaxStakePerBet] = useState(settings.maxStakePerBet.toString());
   const [maxDailyStake, setMaxDailyStake] = useState(settings.maxDailyStake.toString());
   const [sessionThreshold, setSessionThreshold] = useState(settings.sessionNudgeThreshold.toString());
+
+  const handleSelfExclusion = (durationHours: number, durationText: string) => {
+    Alert.alert(
+      `Confirm Self-Exclusion`,
+      `Are you sure you want to exclude yourself from betting for ${durationText}? You will not be able to use any betting functions during this period.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Confirm',
+          onPress: () => startSelfExclusion(durationHours),
+          style: 'destructive',
+        },
+      ]
+    );
+  };
 
   const handleBackStakeChange = (text: string) => {
     setBackStake(text);
@@ -241,6 +263,56 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Take a Break from Betting</Text>
+        <View style={[styles.card, { opacity: isSelfExcluded ? 0.6 : 1 }]}>
+          <View style={styles.settingRow}>
+            <View style={styles.settingIcon}>
+              <LogOut size={20} color={Colors.loss} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Self-Exclusion</Text>
+              <Text style={styles.settingDescription}>
+                {isSelfExcluded 
+                  ? 'Self-exclusion is currently active' 
+                  : 'Lock the app for a set period'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.buttonGrid}>
+            <Pressable 
+              style={styles.gridButton} 
+              disabled={isSelfExcluded}
+              onPress={() => handleSelfExclusion(24, '24 hours')}
+            >
+              <Text style={styles.gridButtonText}>24 hours</Text>
+            </Pressable>
+            <Pressable 
+              style={styles.gridButton} 
+              disabled={isSelfExcluded}
+              onPress={() => handleSelfExclusion(48, '48 hours')}
+            >
+              <Text style={styles.gridButtonText}>48 hours</Text>
+            </Pressable>
+            <Pressable 
+              style={styles.gridButton} 
+              disabled={isSelfExcluded}
+              onPress={() => handleSelfExclusion(168, '1 week')}
+            >
+              <Text style={styles.gridButtonText}>1 week</Text>
+            </Pressable>
+            <Pressable 
+              style={styles.gridButton} 
+              disabled={isSelfExcluded}
+              onPress={() => handleSelfExclusion(720, '1 month')}
+            >
+              <Text style={styles.gridButtonText}>1 month</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Support</Text>
         <View style={styles.card}>
           <Pressable 
@@ -266,7 +338,21 @@ export default function SettingsScreen() {
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingLabel}>GamCare</Text>
-              <Text style={styles.settingDescription}>Free support for gambling problems</Text>
+              <Text style={styles.settingDescription}>National Gambling Helpline</Text>
+            </View>
+            <ExternalLink size={18} color={Colors.textTertiary} />
+          </Pressable>
+          <View style={styles.divider} />
+          <Pressable 
+            style={styles.linkRow}
+            onPress={() => openLink('https://www.gamstop.co.uk/')}
+          >
+            <View style={styles.settingIcon}>
+              <Heart size={20} color={Colors.profit} />
+            </View>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>GamStop</Text>
+              <Text style={styles.settingDescription}>National self-exclusion scheme</Text>
             </View>
             <ExternalLink size={18} color={Colors.textTertiary} />
           </Pressable>
@@ -377,5 +463,26 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     lineHeight: 18,
     textAlign: 'center',
+  },
+  buttonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    padding: 10,
+    paddingLeft: 62,
+  },
+  gridButton: {
+    backgroundColor: Colors.backgroundTertiary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    width: '48%',
+    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridButtonText: {
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

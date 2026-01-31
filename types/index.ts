@@ -1,5 +1,13 @@
 export type Bookmaker = 'bet365' | 'skybet' | 'williamhill' | 'paddypower' | 'ladbrokes';
 
+export enum NudgeType {
+  Session = 'session',
+  LateNight = 'late_night',
+  StakeLimit = 'stake_limit',
+  DailyLimit = 'daily_limit',
+  SelfExclusion = 'self_exclusion',
+}
+
 export interface Opportunity {
   id: string;
   homeTeam: string;
@@ -50,6 +58,11 @@ export interface SessionStats {
   currentSessionActions: number;
   sessionStartTime: Date | null;
   lastActionTime: Date | null;
+}
+
+export interface SelfExclusionSettings {
+  isActive: boolean;
+  exclusionUntil: string | null;
 }
 
 export const BOOKMAKER_NAMES: Record<Bookmaker, string> = {

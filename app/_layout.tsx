@@ -7,6 +7,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Colors from '@/constants/colors';
 import { AppProvider } from '@/contexts/AppContext';
 import { HarmMinimisationProvider } from '@/contexts/HarmMinimisationContext';
+import { useRealityCheck } from '@/hooks/useRealityCheck';
+import RealityCheckModal from '@/components/RealityCheckModal';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,6 +35,23 @@ function RootLayoutNav() {
   );
 }
 
+function App() {
+  const { isRealityCheckVisible, realityCheckData, handleContinue, handleTakeBreak } = useRealityCheck();
+
+  return (
+    <>
+      <StatusBar style="light" />
+      <RootLayoutNav />
+      <RealityCheckModal 
+        visible={isRealityCheckVisible}
+        data={realityCheckData}
+        onContinue={handleContinue}
+        onTakeBreak={handleTakeBreak}
+      />
+    </>
+  )
+}
+
 export default function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
@@ -43,8 +62,7 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AppProvider>
           <HarmMinimisationProvider>
-            <StatusBar style="light" />
-            <RootLayoutNav />
+            <App />
           </HarmMinimisationProvider>
         </AppProvider>
       </GestureHandlerRootView>

@@ -30,11 +30,22 @@ export function calculateOpportunity(
 }
 
 export function formatCurrency(amount: number, showSign = false): string {
+  const options = {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  };
+
+  const formatter = new Intl.NumberFormat('en-GB', options);
+  const formattedAmount = formatter.format(Math.abs(amount));
+
   if (showSign) {
     const sign = amount >= 0 ? '+' : '-';
-    return `${sign}£${Math.abs(amount).toFixed(2)}`;
+    return `${sign}${formattedAmount}`;
   }
-  return amount < 0 ? `-£${Math.abs(amount).toFixed(2)}` : `£${amount.toFixed(2)}`;
+  
+  return amount < 0 ? `-${formattedAmount}` : formattedAmount;
 }
 
 export function formatOdds(odds: number): string {
@@ -74,7 +85,8 @@ export function getTimeUntilKickoff(kickoff: Date): string {
   if (minutes < 60) {
     return `${minutes}m`;
   } else if (hours < 24) {
-    return `${hours}h ${minutes % 60}m`;
+    const remainingMinutes = minutes % 60;
+    return `${hours}h${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
   }
   return `${Math.floor(hours / 24)}d`;
 }

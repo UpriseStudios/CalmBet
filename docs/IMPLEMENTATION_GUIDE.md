@@ -14,6 +14,7 @@ This document outlines all changes needed to transform CalmBet into a world-clas
 5. [Database Schema](#database-schema)
 6. [Testing Requirements](#testing-requirements)
 7. [Deployment Checklist](#deployment-checklist)
+8. [Known Limitations](#known-limitations)
 
 ---
 
@@ -583,6 +584,14 @@ After achieving 10.1/10, consider:
 8. **Arbitrage Finder** - Guaranteed profit opportunities
 9. **Profit Tracker** - Integration with banking APIs
 10. **Educational Content** - In-app tutorials
+
+---
+
+## 🧐 Known Limitations
+
+### Timezone Dependency
+
+- **`isWithinQuietHours` function:** The current implementation in `utils/calculations.ts` uses the device's local time (`new Date()`) to determine if it's within the user-defined quiet hours. This can lead to incorrect behavior if the user travels to a different timezone or manually changes their device's time. For a more robust solution in a future version, consider using a timezone-aware library (e.g., `date-fns-tz`) and storing the user's preferred timezone in settings.
 
 ---
 
