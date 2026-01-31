@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "uprise-app",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -34,11 +33,18 @@
           "origin": "https://rork.com/"
         }
       ],
-      "expo-font",
-      "expo-web-browser"
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://rork.com/"
+      },
+      "eas": {
+        "projectId": "dc772473-a261-4d62-ba37-cae06c1a0465"
+      }
     }
   }
 }
