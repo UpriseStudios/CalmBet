@@ -30,10 +30,8 @@ export function calculateEachWay({ opportunity, totalStake, commission }: EachWa
   
   // 3. Calculate the effective odds for the PLACE part of the bet.
   const placeOdds = 1 + (backOdds - 1) * placeTerms.fraction;
-  // For the place part, the lay odds are often different. For this simulation,
-  // we will assume a simplified lay odds scenario for the place market.
-  // A real app would need a separate place market lay odds.
-  const placeLayOdds = (placeOdds / (1 + 0.05)); // Assuming place lay is 5% worse than implied
+  // To calculate the implied place lay odds, we mirror the bookmaker's calculation.
+  const placeLayOdds = 1 + (layOdds - 1) * placeTerms.fraction;
 
   // 4. Calculate the lay stake for the PLACE part of the bet.
   const placeLayStake = (placeOdds * placeBackStake) / (placeLayOdds - commissionRate);
@@ -43,21 +41,12 @@ export function calculateEachWay({ opportunity, totalStake, commission }: EachWa
   // 5. Calculate the three possible outcomes.
 
   // Scenario 1: The horse WINS.
-  // - Win part of back bet wins.
-  // - Place part of back bet wins.
-  // - Both lay bets lose (we pay the liability).
   const profitIfWin = (winBackStake * (backOdds - 1)) + (placeBackStake * (placeOdds - 1)) - winLiability - placeLiability;
 
   // Scenario 2: The horse PLACES but does not win.
-  // - Win part of back bet loses.
-  // - Place part of back bet wins.
-  // - Win lay bet wins.
-  // - Place lay bet loses.
-  const profitIfPlace = (placeBackStake * (placeOdds - 1)) + winLayProfit - placeLiability - winBackStake;
+  const profitIfPlace = (placeBackStake * (placeOdds - 1)) - winBackStake + winLayProfit - placeLiability;
 
   // Scenario 3: The horse LOSES (does not place).
-  // - Both parts of back bet lose.
-  // - Both lay bets win.
   const profitIfLose = winLayProfit + placeLayProfit - totalStake;
 
   return {
